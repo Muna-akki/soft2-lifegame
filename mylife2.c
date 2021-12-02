@@ -44,6 +44,7 @@ int main(int argc, char **argv){
 
     my_print_cells(fp, 0, height, width, cell); // 表示する
     sleep(1); // 1秒休止
+    fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
     
     /* 世代を進める*/
     for (int gen = 1 ;; gen++) {
@@ -122,7 +123,6 @@ void my_init_cells(const int height, const int width, int cell[height][width], F
             if(x<0 || x>=width || y<0 || y>=height){
                 fprintf(stderr,"invalid file format\n");
             }
-            printf("%d, %d\n",x,y);
             cell[y][x] = 1;
             c1 = fscanf(fp,"%d%*C",&x);
             c2 = fscanf(fp,"%d%*C",&y);
@@ -228,7 +228,7 @@ int my_count_adjacent_cells(int h, int w, const int height, const int width, int
     for(int k=0 ; k<8 ; k++){
         rx = w+d[k][1];
         ry = h+d[k][0];
-        if(ry>0 && ry<height && rx>0 && rx<width){
+        if(ry>=0 && ry<height && rx>=0 && rx<width){
             if(cell[ry][rx]==1){
                 ex++;
             }

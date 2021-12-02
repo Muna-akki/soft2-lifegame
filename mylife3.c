@@ -13,6 +13,8 @@ int my_count_adjacent_cells(int h, int w, const int height, const int width, int
 void make_cells(const int height, const int width, int cell[height][width]);
 int count_cells(const int height, const int width, int cell[height][width]);
 void make_files(const int height, const int width, int gen, int cell[height][width]);
+int ctoi(char c);
+
 
 int main(int argc, char **argv){
     FILE *fp = stdout;
@@ -45,7 +47,8 @@ int main(int argc, char **argv){
 
     my_print_cells(fp, 0, height, width, cell); // 表示する
     sleep(1); // 1秒休止
-    
+    fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
+
     /* 世代を進める*/
     for (int gen = 1 ;; gen++) {
         my_update_cells(height, width, cell); // セルを更新
@@ -53,7 +56,8 @@ int main(int argc, char **argv){
         sleep(1); //1秒休止する
         fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
         
-        /*
+        //ファイルへの出力はこのファイルでは邪魔なため止めている。
+        /* 
         if(gen%100 == 0 && gen<10000){
             make_files(height, width, gen, cell);
         }
@@ -125,7 +129,6 @@ void my_init_cells(const int height, const int width, int cell[height][width], F
                 if(x<0 || x>=width || y<0 || y>=height){
                     fprintf(stderr,"invalid file format\n");
                 }
-                printf("%d, %d\n",x,y);
                 cell[y][x] = 1;
                 c1 = fscanf(fp,"%d%*C",&x);
                 c2 = fscanf(fp,"%d%*C",&y);
@@ -134,12 +137,131 @@ void my_init_cells(const int height, const int width, int cell[height][width], F
         
     }
 }
-void my_rle_cells(const int height, const int width, int cell[height][width], FILE* fp){
-    char s[height*(width+1)];
-    
 
+//charをintとして返す関数
+int ctoi(char c){
+    if(c>='0' && c<='9'){
+        return c-'0';
+    }
+    return -1;
 }
 
+//RLE形式の読み取り
+void my_rle_cells(const int height, const int width, int cell[height][width], FILE* fp){
+    int l = height*(width+1);
+    char s[l];
+    char* p;
+    int count = 0;
+    //どこまでが#始まりの行かを探す
+    while(1){
+        p = fgets(s,l,fp);
+        if(p==NULL){
+            printf("invalid format of file");
+            return;
+        }
+        count++;
+        if(s[0]=='#'){
+            continue;
+        }else{
+            break;
+        }
+    }
+    //ファイル先頭へ
+    rewind(fp);
+    for(int i=0 ; i<count-1 ; i++){
+        p = fgets(s,l,fp);
+    }
+    int x = 0;
+    int y = 0;
+    fscanf(fp,"x = %d, y = %d", &x, &y); //実質使わない
+    if(x<0 || x>width || y<0 || y>height){
+        printf("invalid file format");
+        return;
+    }
+    fscanf(fp,"%*[^\n]%*c");
+    //ここで目的の内容に到達
+    x = 0;
+    y = 0;
+    while((fscanf(fp, "%[^$]%*c",s))==1){ //行ごと
+        x = 0;
+        int L = strlen(s);
+        while(1){
+            int z = 0;
+            int w = 0;
+            for(int i=0 ; i<L ; i++){
+                if(s[i]=='\n'){
+                    z = 1;
+                    w = i;
+                    break;
+                }
+            }
+            if(z==0){
+                break;
+            }else{
+                for(int i=w+1 ; i<L ; i++){
+                    s[i-1] = s[i]; 
+                }
+                L = strlen(s);
+                s[L-1] = '\0';
+            }
+        }
+        int num = 0;
+        int i = 0;
+        L = strlen(s);
+        while(i<L){
+            num = 1;
+            if(i==L-1){
+                if(s[i]=='!'){
+                    break;
+                }else{
+                    if(s[i]=='b'){
+                        cell[y][x] = 0;
+                    }else{
+                        cell[y][x] = 1;
+                    }
+                    x++;
+                    i++;
+                }
+            }else{
+                if(ctoi(s[i])==-1){
+                    if(s[i]=='b'){
+                        cell[y][x] = 0;
+                    }else{
+                        cell[y][x] = 1;
+                    }
+                    i++;
+                    x++;
+                }else{
+                    if(ctoi(s[i+1])==-1){
+                        num = ctoi(s[i]);
+                        for(int j=0 ; j<num ; j++){
+                            if(s[i+1]=='b'){
+                                cell[y][x] = 0;
+                            }else{
+                                cell[y][x] = 1;
+                            }
+                            x++;
+                        }
+                        i += 2;
+                    }else{
+                        num = ctoi(s[i])*10+ctoi(s[i+1]);
+                        for(int j=0 ; j<num ; j++){
+                            if(s[i+2]=='b'){
+                                cell[y][x] = 0;
+                            }else{
+                                cell[y][x] = 1;
+                            }
+                            x++;
+                        }
+                        i += 3;
+                    }
+                }
+            }
+        }
+        y++;
+    }
+
+}
 
 //ランダム初期化
 void make_cells(const int height, const int width, int cell[height][width]){
@@ -239,7 +361,7 @@ int my_count_adjacent_cells(int h, int w, const int height, const int width, int
     for(int k=0 ; k<8 ; k++){
         rx = w+d[k][1];
         ry = h+d[k][0];
-        if(ry>0 && ry<height && rx>0 && rx<width){
+        if(ry>=0 && ry<height && rx>=0 && rx<width){
             if(cell[ry][rx]==1){
                 ex++;
             }
