@@ -11,6 +11,7 @@ void my_update_cells(const int height, const int width, int cell[height][width])
 int my_count_adjacent_cells(int h, int w, const int height, const int width, int cell[height][width]);
 void make_cells(const int height, const int width, int cell[height][width]);
 int count_cells(const int height, const int width, int cell[height][width]);
+void make_files(const int height, const int width, int gen, int cell[height][width]);
 
 int main(int argc, char **argv){
     FILE *fp = stdout;
@@ -43,17 +44,61 @@ int main(int argc, char **argv){
 
     my_print_cells(fp, 0, height, width, cell); // 表示する
     sleep(1); // 1秒休止
-
+    
     /* 世代を進める*/
     for (int gen = 1 ;; gen++) {
         my_update_cells(height, width, cell); // セルを更新
         my_print_cells(fp, gen, height, width, cell);  // 表示する
         sleep(1); //1秒休止する
         fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
+        if(gen%100 == 0 && gen<10000){
+            make_files(height, width, gen, cell);
+        }
     }
 
     return EXIT_SUCCESS;
 }
+
+//100世代ごとのファイルへの出力
+void make_files(const int height, const int width, int gen, int cell[height][width]){
+    FILE* fp2;
+    char* name = (char*) malloc(sizeof(char)* 12);
+    name[0] = 'g';
+    name[1] = 'e';
+    name[2] = 'n';
+    name[3] = '0';
+    name[4] = '0';
+    name[5] = '0';
+    name[6] = '0';
+    name[7] = '.';
+    name[8] = 'l';
+    name[9] = 'i';
+    name[10] = 'f';
+    name[11] = '\0';
+    int num = gen/100;
+    int f = num/10;
+    int s = num%10;
+    name[3] = '0'+f;
+    name[4] = '0'+s;
+    
+    fp2 = fopen(name, "w");
+    if(fp2==NULL){
+        printf("Cannot make %s\n",name);
+        return;
+    }
+    free(name);
+    fprintf(fp2, "#Life 1.06\n");
+    for(int i=0 ; i<height ; i++){
+        for(int j=0 ; j<width ; j++){
+            if(cell[i][j]==1){
+                fprintf(fp2,"%d %d\n",j,i);
+            }
+        }   
+    }
+    fclose(fp2);
+    
+}
+
 
 //ファイルによるcellの初期化
 void my_init_cells(const int height, const int width, int cell[height][width], FILE* fp){
