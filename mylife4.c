@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h> // sleep()関数を使う
 #include <time.h>
+#include <math.h>
 //#include "gol.h"
 
 void my_init_cells(const int height, const int width, int cell[height][width], FILE* fp);
@@ -14,7 +15,7 @@ void make_cells(const int height, const int width, int cell[height][width]);
 int count_cells(const int height, const int width, int cell[height][width]);
 void make_files(const int height, const int width, int gen, int cell[height][width]);
 int ctoi(char c);
-
+void d_and_b(const int height, const int width, int cell[height][width], int random1, int random2, int random3, int random4);
 
 int main(int argc, char **argv){
     FILE *fp = stdout;
@@ -44,18 +45,29 @@ int main(int argc, char **argv){
     }else{
         my_init_cells(height, width, cell, NULL); // デフォルトの初期値を使う
     }
-    int stop = 50000;
+    int stop = 100000;
     my_print_cells(fp, 0, height, width, cell); // 表示する
-    usleep(stop); // 1秒休止
+    usleep(stop); // 休止
     fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
+    
+    // ランダムな何かを行う起点
+    struct timespec start;
+    clock_gettime(CLOCK_REALTIME, &start);
+    srand(start.tv_nsec);
 
     /* 世代を進める*/
     for (int gen = 1 ;; gen++) {
         my_update_cells(height, width, cell); // セルを更新
         my_print_cells(fp, gen, height, width, cell);  // 表示する
-        usleep(stop); //1秒休止する
+        usleep(stop); //休止する
         fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
         
+        if(rand()%10==1){
+            d_and_b(height, width, cell,rand(),rand(),rand(),rand());
+            my_print_cells(fp, gen, height, width, cell);
+            usleep(stop);
+            fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
+        }
         //ファイルへの出力はこのファイルでは邪魔なため止めている。
         /* 
         if(gen%100 == 0 && gen<10000){
@@ -65,6 +77,72 @@ int main(int argc, char **argv){
     }
 
     return EXIT_SUCCESS;
+}
+
+//確率的死亡、誕生
+void d_and_b(const int height, const int width, int cell[height][width], int random1, int random2, int random3, int random4){
+    int x = random1 % width; //起点x座標
+    int y = random2 % height; //起点y座標
+    int rmax = random3%5 + 1; //範囲
+    int z = 4; //パターン数
+    if(random4%z==0){ //円形
+        for(int i=y-rmax ; i<=y+rmax ; i++){
+            if(i<0 || i>=height){
+                continue;
+            }
+            for(int j=x-rmax ; j<=x+rmax ; j++){
+                if(j<0 || j>=width){
+                    continue;
+                }
+                if(sqrt((double)(i-y)*(i-y)+(j-x)*(j-x))<rmax){
+                    cell[i][j] = -100;
+                }
+            }
+        } 
+    }else if(random4%z==1){ //十字
+        for(int i=y-rmax ; i<=y+rmax ; i++){
+            if(i<0 || i>=height){
+                continue;
+            }
+            cell[i][x] = -100;
+        }
+        for(int j=x-rmax ; j<=x+rmax ; j++){
+            if(j<0 || j>=width){
+                continue;
+            }
+            cell[y][j] = -100;  
+        }
+    }else if(random4%z==2){ //X字
+        for(int i=0 ; i<=rmax ; i++){
+            if(x-i>=0 && y-i>=0){
+                cell[y-i][x-i] = -100;
+            }
+            if(x+i<width && y-i>=0){
+                cell[y-i][x+i] = -100;
+            }
+            if(x-i>=0 && y+i<height){
+                cell[y+i][x-i] = -100;
+            }
+            if(x+i<width && y+i<height){
+                cell[y+i][x+i] = -100;
+            }
+        }
+    }else if(random4%z==3){ //円
+        for(int i=-rmax ; i<=rmax ; i++){
+            if(y+i<0 || y+i>=height){
+                continue;
+            }
+            int j = sqrt(rmax*rmax - i*i);
+            if(x+j>=0 && x+j<width){
+                cell[y+i][x+j] = 100;
+            }
+            j *= -1;
+            if(x+j>=0 && x+j<width){
+                cell[y+i][x+j] = 100;
+            }
+        }  
+    }
+    
 }
 
 //100世代ごとのファイルへの出力
@@ -308,9 +386,18 @@ void my_print_cells(FILE* fp, int gen, const int height, const int width, int ce
         fprintf(fp,"|");
         for(int j=0 ; j<width ; j++){
             if(cell[i][j] == 1){
-                fprintf(fp, "\x1b[31m");
+                fprintf(fp, "\x1b[32m");
                 fprintf(fp, "#");
                 fprintf(fp, "\x1b[39m");
+            }else if(cell[i][j]==-100){
+                fprintf(fp, "\x1b[33m");
+                fprintf(fp, "*");
+                fprintf(fp, "\x1b[39m");
+            }else if(cell[i][j]==100){
+                fprintf(fp, "\x1b[36m");
+                fprintf(fp, "#");
+                fprintf(fp, "\x1b[39m");
+                cell[i][j] = 1;
             }else{
                 fprintf(fp, " ");
             }

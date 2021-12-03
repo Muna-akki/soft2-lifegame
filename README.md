@@ -1,5 +1,7 @@
 # soft2-lifegame
 
+基本的に各コードはそれ以前のコードを含むようにはなっているが、mylife2.cのファイル出力機能のように邪魔なものは適宜コメントアウトしている。
+
 ## 共通部(life.c)
 my_init cells()とmy_print_cells()、my_update_cells()、my_count_adjacent_cells()を使用の要求通りに実装。
 my_count_adjacent_cells()では以下のように、
@@ -231,3 +233,4 @@ void my_rle_cells(const int height, const int width, int cell[height][width], FI
 
 この際、何文字分行を読み進めたかに応じてiを更新し、何マス分書き進めたかに応じてxを更新する。ある行についてsを読み終わったらyを加算、xを0に戻してまた次の行について同様の操作を繰り返す。
 ## 課題4(mylife4.c)
+まず、「生きている」ことを表すセルが赤色なのは生きている感じも薄くずっと見続けるには目にも良くないだろうということで緑色に変更。
