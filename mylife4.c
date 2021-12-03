@@ -16,7 +16,7 @@ int count_cells(const int height, const int width, int cell[height][width]);
 void make_files(const int height, const int width, int gen, int cell[height][width]);
 int ctoi(char c);
 void d_and_b(const int height, const int width, int cell[height][width], int random1, int random2, int random3, int random4);
-void warp(const int height, const int width, int cell[height][width]);
+void warp_and_larger(const int height, const int width, int cell[height][width]);
 void secret_print_cells(FILE* fp, const int height, const int width, int cell[height][width]);
 
 int main(int argc, char **argv){
@@ -47,7 +47,7 @@ int main(int argc, char **argv){
     }else{
         my_init_cells(height, width, cell, NULL); // デフォルトの初期値を使う
     }
-    int stop = 100000;
+    long stop = 100000;
     my_print_cells(fp, 0, height, width, cell); // 表示する
     usleep(stop); // 休止
     fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
@@ -63,18 +63,18 @@ int main(int argc, char **argv){
         my_print_cells(fp, gen, height, width, cell);  // 表示する
         usleep(stop); //休止する
         fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
-        
-        int check = rand()%100;
-        if(check>=2 && check<=11){
+
+        int check = rand()%1000;
+        if(check>=100 && check<=300){
             d_and_b(height, width, cell, rand(), rand(), rand(), rand());
             my_print_cells(fp, gen, height, width, cell);
             usleep(stop);
             fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
-        }else if(check==1){
+        }else if(check==10 || check==323 || check==457 || check==753 || check==960){
             secret_print_cells(fp, height, width, cell);
             sleep(1);
             fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
-            warp(height, width, cell);
+            warp_and_larger(height, width, cell);
             my_print_cells(fp, gen, height, width, cell);
             usleep(stop);
             fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
@@ -83,15 +83,13 @@ int main(int argc, char **argv){
         /* 
         if(gen%100 == 0 && gen<10000){
             make_files(height, width, gen, cell);
-        }
-        */
+        }*/
     }
-
     return EXIT_SUCCESS;
 }
 //特殊表示
 void secret_print_cells(FILE* fp, const int height, const int width, int cell[height][width]){
-    fprintf(fp, "generation = ???   ????%% of the cells are alive.\n");
+    fprintf(fp, "generation = ???   ????%% of the cells are alive\n");
     fprintf(fp,"+");
     for(int i=0 ; i<width ; i++){
         fprintf(fp,"-");
@@ -114,7 +112,7 @@ void secret_print_cells(FILE* fp, const int height, const int width, int cell[he
 }
 
 //ワープ
-void warp(const int height, const int width, int cell[height][width]){
+void warp_and_larger(const int height, const int width, int cell[height][width]){
     int e = count_cells(height, width, cell);
     struct timespec start;
     clock_gettime(CLOCK_REALTIME, &start);
@@ -134,6 +132,23 @@ void warp(const int height, const int width, int cell[height][width]){
             e--;
         }
     }
+    int d[3][2] = {{-1,0},{-1,-1},{0,-1}};
+    int rx,ry;
+    for(int i=0 ; i<height ; i++){
+        for(int j=0 ; j<width ; j++){
+            if(cell[i][j]==0){
+                continue;
+            }
+            for(int k=0 ; k<3 ; k++){
+                ry = i+d[k][0];
+                rx = j+d[k][1];
+                if(ry>=0 && ry<height && rx>=0 && rx<width){
+                    cell[ry][rx] = 1;
+                }
+            }
+        }
+    }
+
 }
 
 //確率的死亡、誕生
@@ -433,7 +448,7 @@ void my_print_cells(FILE* fp, int gen, const int height, const int width, int ce
     fprintf(fp, "generation = %d",gen);
     int live = count_cells(height,width,cell);
     double per = (double) live /(height*width) * 100;
-    fprintf(fp, "   %.2lf%% of the cells are alive.\n", per);
+    fprintf(fp, "   %.2lf%% of the cells are alive\n", per);
     fprintf(fp,"+");
     for(int i=0 ; i<width ; i++){
         fprintf(fp,"-");
