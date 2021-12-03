@@ -120,7 +120,7 @@ void my_print_cells(FILE* fp, int gen, const int height, const int width, int ce
     fprintf(fp, "generation = %d",gen);
     int live = count_cells(height,width,cell);
     double per = (double) live /(height*width) * 100;
-    fprintf(fp, "   %.2lf%% of the cells are alive.\n", per);
+    fprintf(fp, "   %.2lf%% of the cells are alive\n", per);
     fprintf(fp,"+");
     for(int i=0 ; i<width ; i++){
         fprintf(fp,"-");
