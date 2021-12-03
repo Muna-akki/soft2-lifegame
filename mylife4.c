@@ -44,16 +44,16 @@ int main(int argc, char **argv){
     }else{
         my_init_cells(height, width, cell, NULL); // デフォルトの初期値を使う
     }
-
+    int stop = 50000;
     my_print_cells(fp, 0, height, width, cell); // 表示する
-    sleep(1); // 1秒休止
+    usleep(stop); // 1秒休止
     fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
 
     /* 世代を進める*/
     for (int gen = 1 ;; gen++) {
         my_update_cells(height, width, cell); // セルを更新
         my_print_cells(fp, gen, height, width, cell);  // 表示する
-        sleep(1); //1秒休止する
+        usleep(stop); //1秒休止する
         fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
         
         //ファイルへの出力はこのファイルでは邪魔なため止めている。
