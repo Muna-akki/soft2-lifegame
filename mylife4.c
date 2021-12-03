@@ -16,6 +16,8 @@ int count_cells(const int height, const int width, int cell[height][width]);
 void make_files(const int height, const int width, int gen, int cell[height][width]);
 int ctoi(char c);
 void d_and_b(const int height, const int width, int cell[height][width], int random1, int random2, int random3, int random4);
+void warp(const int height, const int width, int cell[height][width]);
+void secret_print_cells(FILE* fp, const int height, const int width, int cell[height][width]);
 
 int main(int argc, char **argv){
     FILE *fp = stdout;
@@ -62,8 +64,17 @@ int main(int argc, char **argv){
         usleep(stop); //休止する
         fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
         
-        if(rand()%10==1){
-            d_and_b(height, width, cell,rand(),rand(),rand(),rand());
+        int check = rand()%100;
+        if(check>=2 && check<=11){
+            d_and_b(height, width, cell, rand(), rand(), rand(), rand());
+            my_print_cells(fp, gen, height, width, cell);
+            usleep(stop);
+            fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
+        }else if(check==1){
+            secret_print_cells(fp, height, width, cell);
+            sleep(1);
+            fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
+            warp(height, width, cell);
             my_print_cells(fp, gen, height, width, cell);
             usleep(stop);
             fprintf(fp,"\e[%dA",height+3);//height+3 の分、カーソルを上に戻す(壁2、表示部1)
@@ -78,13 +89,59 @@ int main(int argc, char **argv){
 
     return EXIT_SUCCESS;
 }
+//特殊表示
+void secret_print_cells(FILE* fp, const int height, const int width, int cell[height][width]){
+    fprintf(fp, "generation = ???   ????%% of the cells are alive.\n");
+    fprintf(fp,"+");
+    for(int i=0 ; i<width ; i++){
+        fprintf(fp,"-");
+    }
+    fprintf(fp,"+\n");
+    for(int i=0 ; i<height ; i++){
+        fprintf(fp,"|");
+        for(int j=0 ; j<width ; j++){
+            fprintf(fp,"\x1b[31m");
+            fprintf(fp, "?");
+            fprintf(fp,"\x1b[39m");
+        }
+        fprintf(fp, "|\n");
+    }
+    fprintf(fp,"+");
+    for(int i=0 ; i<width ; i++){
+        fprintf(fp,"-");
+    }
+    fprintf(fp,"+\n");
+}
+
+//ワープ
+void warp(const int height, const int width, int cell[height][width]){
+    int e = count_cells(height, width, cell);
+    struct timespec start;
+    clock_gettime(CLOCK_REALTIME, &start);
+    srand(start.tv_nsec);
+    int x = 0;
+    int y = 0;
+    for(int i=0 ; i<height ; i++){
+        for(int j=0 ; j<width ; j++){
+            cell[i][j] = 0;
+        }
+    }
+    while(e>0){
+        x = rand()%width;
+        y = rand()%height;
+        if(cell[y][x]==0){
+            cell[y][x] = 1;
+            e--;
+        }
+    }
+}
 
 //確率的死亡、誕生
 void d_and_b(const int height, const int width, int cell[height][width], int random1, int random2, int random3, int random4){
     int x = random1 % width; //起点x座標
     int y = random2 % height; //起点y座標
     int rmax = random3%5 + 1; //範囲
-    int z = 4; //パターン数
+    int z = 5; //パターン数
     if(random4%z==0){ //円形
         for(int i=y-rmax ; i<=y+rmax ; i++){
             if(i<0 || i>=height){
