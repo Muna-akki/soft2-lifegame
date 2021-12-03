@@ -87,6 +87,7 @@ int main(int argc, char **argv){
     }
     return EXIT_SUCCESS;
 }
+
 //特殊表示
 void secret_print_cells(FILE* fp, const int height, const int width, int cell[height][width]){
     fprintf(fp, "generation = ???   ????%% of the cells are alive\n");
@@ -111,7 +112,7 @@ void secret_print_cells(FILE* fp, const int height, const int width, int cell[he
     fprintf(fp,"+\n");
 }
 
-//ワープ
+//ワープ&巨大化
 void warp_and_larger(const int height, const int width, int cell[height][width]){
     int e = count_cells(height, width, cell);
     struct timespec start;
